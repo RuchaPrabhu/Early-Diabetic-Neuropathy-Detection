@@ -1,139 +1,312 @@
-# Early Diabetic Neuropathy Detection
+# Early Diabetic Neuropathy Detection via Foot Vibration & Pressure Mapping
 
 ## Overview
 
-This project focuses on developing a low-cost, portable system for the early
-detection of peripheral diabetic neuropathy.
+Diabetic peripheral neuropathy is a common complication of long-term
+diabetes that can cause reduced sensation in the feet and abnormal plantar
+pressure distribution. These changes can increase the risk of foot ulcers
+and other complications.
 
-The system combines vibration perception threshold (VPT) testing with
-plantar pressure mapping to assess sensory and pressure-related indicators
-associated with peripheral neuropathy.
+This project presents a low-cost and portable prototype for early screening
+of peripheral neuropathy by combining:
 
-The objective is to develop an affordable screening system suitable for
-point-of-care and resource-constrained settings.
+- Vibration Perception Threshold (VPT) testing
+- Plantar pressure measurement
+
+The system uses an ESP32-based data-acquisition unit, Velostat pressure
+sensors, and an ERM vibration motor to obtain pressure and vibration-related
+measurements and provide an experimental risk classification.
+
+The prototype was designed with a target cost of **≤ ₹1000**.
 
 ---
 
 ## Objectives
 
-- Develop a low-cost and portable system for peripheral neuropathy screening.
-- Implement vibration perception threshold (VPT) testing.
-- Measure plantar pressure distribution using a sensorized insole.
-- Integrate the sensing and data-acquisition system using an ESP32.
-- Develop a real-time risk-scoring approach based on the acquired measurements.
-- Maintain a target system cost below ₹1000.
+- Measure plantar pressure distribution at key regions of the foot.
+- Measure Vibration Perception Threshold (VPT).
+- Calculate pressure-based indicators such as the pressure ratio.
+- Combine pressure and vibration measurements into an experimental risk
+  score.
+- Develop a low-cost and portable screening prototype.
+- Use readily available and affordable electronic components.
 
 ---
 
 ## System Overview
 
-The system consists of two primary assessment methods:
+The prototype combines two complementary measurements.
 
-### 1. Vibration Perception Threshold Testing
+### 1. Plantar Pressure Measurement
 
-Vibration stimuli are applied using vibration actuators to assess the user's
-ability to perceive vibration.
+Velostat-based pressure sensors are used to measure changes in plantar
+loading.
 
-The response obtained during the test is used as an indicator of sensory
-function.
+The sensors are incorporated into voltage-divider circuits and connected
+to the analog input pins of the ESP32.
 
-### 2. Plantar Pressure Mapping
+The ESP32 acquires the sensor voltages through its ADC and calculates a
+pressure ratio from the sensor readings.
 
-A sensorized insole based on Velostat pressure-sensitive material is used
-to measure pressure distribution across the foot.
+### 2. Vibration Perception Threshold
 
-The pressure measurements provide information about the distribution and
-variation of plantar loading.
+An ERM (Eccentric Rotating Mass) motor is used to generate vibration
+stimuli.
+
+The motor intensity is controlled using PWM. The vibration intensity is
+gradually increased until the user reports that the vibration is perceived.
+
+The corresponding PWM value is recorded as the vibration measurement used
+in the experimental risk assessment.
+
+### 3. Risk Assessment
+
+The pressure ratio and vibration measurement are combined to calculate an
+experimental risk score.
+
+The score is then classified into LOW, MEDIUM, or HIGH risk categories.
+
+> **Note:** The prototype is intended as an experimental screening system
+> and is not a substitute for clinical diagnosis.
 
 ---
 
 ## Hardware
 
-The system uses:
+The prototype uses:
 
 - ESP32 microcontroller
-- Vibration actuators
-- Velostat-based pressure sensors
-- Sensorized insole
-- Supporting electronic components
+- Velostat pressure sensors
+- ERM vibration motor
+- Transistor-based motor-driving circuit
+- Voltage-divider circuits for pressure sensing
+- Supporting resistors and capacitors
 
-The system was designed with a focus on low cost and portability.
-
----
-
-## Software
-
-The ESP32 is used for data acquisition and control of the sensing system.
-
-The software handles:
-
-- Sensor data acquisition
-- Vibration stimulus control
-- Processing of acquired measurements
-- Risk-score calculation
+The ESP32 performs analog data acquisition and PWM generation.
 
 ---
 
-## Risk Assessment
+## System Workflow
 
-Measurements obtained from the VPT and plantar pressure tests are combined
-to provide a real-time risk assessment.
+```text
+                 ┌─────────────────────┐
+                 │      Foot Pressure  │
+                 └──────────┬──────────┘
+                            ↓
+                 ┌─────────────────────┐
+                 │ Velostat Sensors    │
+                 └──────────┬──────────┘
+                            ↓
+                 ┌─────────────────────┐
+                 │ Voltage Divider     │
+                 └──────────┬──────────┘
+                            ↓
+                 ┌─────────────────────┐
+                 │ ESP32 ADC           │
+                 └──────────┬──────────┘
+                            ↓
+                 ┌─────────────────────┐
+                 │ Sensor Processing   │
+                 └──────────┬──────────┘
+                            ↓
+                 ┌─────────────────────┐
+                 │ Pressure Ratio      │
+                 └──────────┬──────────┘
+                            │
+                            │
+                            ↓
+                    ┌───────────────┐
+                    │ Risk Score    │
+                    └───────┬───────┘
+                            ↑
+                            │
+                 ┌──────────┴──────────┐
+                 │ VPT Measurement     │
+                 └──────────┬──────────┘
+                            ↑
+                 ┌─────────────────────┐
+                 │ ERM Vibration Motor │
+                 └──────────┬──────────┘
+                            ↑
+                 ┌─────────────────────┐
+                 │ ESP32 PWM Control   │
+                 └─────────────────────┘
+```
 
-The system is intended as a low-cost screening tool rather than a replacement
-for clinical diagnosis.
+---
+
+## Software Implementation
+
+The ESP32 program performs the following operations:
+
+1. Reads the two Velostat sensor channels using the ESP32 ADC.
+2. Averages multiple ADC readings to reduce measurement variation.
+3. Calculates the ratio between the two sensor readings.
+4. Gradually increases the PWM duty cycle supplied to the ERM motor.
+5. Records the motor duty cycle when the user reports perceiving the
+   vibration.
+6. Calculates an experimental risk score from the pressure ratio and
+   vibration measurement.
+7. Classifies the resulting score into LOW, MEDIUM, or HIGH risk.
+
+### Main Parameters
+
+The current implementation uses:
+
+- **ADC resolution:** 12 bit
+- **PWM resolution:** 8 bit
+- **PWM frequency:** 2 kHz
+- **ADC samples averaged:** 10
+- **PWM increment:** 5
+- **PWM update interval:** approximately 700 ms
+
+---
+
+## Risk Score
+
+The implemented risk score combines the pressure ratio and normalized
+vibration measurement:
+
+```text
+Risk Score = 0.5 × Pressure Ratio
+           + 0.5 × (VPT PWM / 255)
+```
+
+The experimental classification used during the project was:
+
+| Risk Score | Classification |
+|------------|----------------|
+| < 0.85 | LOW |
+| 0.85 ≤ Risk < 1.10 | MEDIUM |
+| > 1.10 | HIGH |
 
 ---
 
 ## Results
 
-The developed prototype demonstrates the feasibility of combining vibration
-perception testing and plantar pressure mapping into a single low-cost
-screening system.
+The prototype was evaluated using three representative cases:
 
-The target system cost is below ₹1000, supporting the potential use of the
-system in affordable point-of-care and resource-constrained screening
-applications.
+1. Healthy-like case
+2. Recently diagnosed diabetic case
+3. Neuropathic-like case
+
+The representative measurements obtained during the project are shown
+below.
+
+| Parameter | Healthy-like | Medium Risk | Neuropathic-like |
+|-----------|--------------|-------------|------------------|
+| Heel ADC | 4057 | 3926 | 2092 |
+| Forefoot ADC | 4091 | 3236 | 3750 |
+| Pressure Ratio | 0.992 | 1.213 | 0.558 |
+| VPT (PWM) | 180 | 130 | 255 |
+| Normalized VPT | 0.705 | 0.51 | 1.0 |
+| Risk Score | 0.848 | 0.861 | 1.279 |
+| Classification | LOW | MEDIUM | HIGH |
+
+The neuropathic-like case showed a substantially different pressure
+distribution and a higher vibration threshold compared with the
+healthy-like case.
+
+---
+
+## Prototype
+
+The final prototype integrates the ESP32 electronics, pressure-sensing
+circuitry, and vibration motor.
+
+![Final Prototype](images/prototype.jpg)
+
+---
+
+## Experimental Testing
+
+### Healthy-like Case
+
+![Healthy-like Test](images/healthy_test.jpg)
+
+### Neuropathic-like Case
+
+![Neuropathic-like Test](images/neuropathic_test.jpg)
 
 ---
 
 ## Project Achievement
 
-**1st Place: SPARK Innovation Challenge 2026**
+**1st Place — SPARK Innovation Challenge 2026**
 
 The project received first place in the SPARK Innovation Challenge for the
-proposed early-detection solution for peripheral neuropathy.
+proposed low-cost early-screening solution for peripheral neuropathy.
 
 ---
 
 ## Future Work
 
-Potential future improvements include:
+Potential extensions to the prototype include:
 
-- Improving sensor calibration and repeatability.
-- Increasing the spatial resolution of plantar pressure measurements.
-- Refining the risk-scoring methodology.
-- Improving the mechanical and electronic packaging of the prototype.
-- Conducting larger-scale validation studies.
-- Comparing measurements with established clinical assessment methods.
+- Increasing the number of pressure sensors for higher-resolution plantar
+  pressure mapping.
+- Computing left-right symmetry indices.
+- Implementing multi-frequency VPT measurements.
+- Adding temperature sensing for foot-temperature mapping.
+- Incorporating IMU-based gait and balance analysis.
+- Developing mobile and IoT-based monitoring for long-term tracking.
 
 ---
 
 ## Tools and Technologies
 
-- ESP32
-- Velostat
-- Vibration actuators
-- Embedded programming
-- Sensor data acquisition
-- Plantar pressure mapping
-- Vibration perception threshold testing
+- **ESP32**
+- **Arduino / C++**
+- **Velostat**
+- **ERM vibration motor**
+- **Analog data acquisition**
+- **PWM control**
+- **Sensor data processing**
+- **Plantar pressure mapping**
+- **Vibration Perception Threshold testing**
 
 ---
 
-## Project Information
+## Repository Structure
 
-**Project:** Early Diabetic Neuropathy Detection  
-**Institution:** Indian Institute of Technology Indore  
-**Duration:** August 2025 – November 2025
+```text
+Early-Diabetic-Neuropathy-Detection/
+│
+├── README.md
+│
+├── Code/
+│   └── neuropathy_detection.ino
+│
+└── images/
+    ├── prototype.jpg
+    ├── healthy_test.jpg
+    └── neuropathic_test.jpg
+```
 
-**Project Guide:** Dr. I. A. Palani
+---
+
+## References
+
+1. Liu, M., Liu, C., Chen, J., Hou, X., Niu, S., & Wang, H. (2021).
+   Quantitative Vibration Perception Threshold in Assessing Diabetic
+   Polyneuropathy. *Journal of Diabetes Research*, 2021, 1–8.
+
+2. Abri, H. A., Saeedi, H., Forghany, S., Luo, G., & Nawoczenski, D. A.
+   (2019). Plantar Pressure Distribution in Diverse Stages of Diabetic
+   Peripheral Neuropathy. *Journal of Diabetes Research*, 2019, 1–8.
+
+3. Caselli, A., Pham, H., Giurini, J. M., Armstrong, D. G., & Veves, A.
+   (2002). The Forefoot-to-Rearfoot Plantar Pressure Ratio Is Increased in
+   Severe Diabetic Neuropathy and Can Predict Foot Ulceration.
+   *Diabetes Care*, 25(6), 1066–1071.
+
+---
+
+## Team
+
+- Nishitha Venkat
+- Reena Meena
+- Vanshika Agrawal
+- Rucha Prabhu
+
+**Indian Institute of Technology Indore**
