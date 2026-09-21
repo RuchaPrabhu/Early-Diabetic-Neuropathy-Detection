@@ -98,7 +98,7 @@ applications.
 
 ## Project Achievement
 
-**1st Place — SPARK Innovation Challenge 2026**
+**1st Place: SPARK Innovation Challenge 2026**
 
 The project received first place in the SPARK Innovation Challenge for the
 proposed early-detection solution for peripheral neuropathy.
